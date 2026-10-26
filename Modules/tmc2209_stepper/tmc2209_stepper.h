@@ -21,9 +21,11 @@ typedef struct {
     uint16_t      DirPin;
     GPIO_TypeDef* EnPort;
     uint16_t      EnPin;
+    GPIO_TypeDef* EndstopPort;
+    uint16_t      EndstopPin;
     
     StepperState_t currentState;
-
+    int32_t       teachInStepsCount;
     int32_t currentPosition;
     int32_t targetPosition;
     int32_t stepsToMove;
