@@ -53,3 +53,30 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Build outputs
+Debug/
+Release/
+build/
+*.elf
+*.hex
+*.bin
+*.map
+*.o
+*.d
+*.su
+
+# STM32CubeIDE / Keil / IAR / Toolchain files
+*.launch
+*.uvoptx
+*.uvprojx
+*.cdkproj
+
+# VS Code / IDE settings (optional)
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# OS Garbage
+Thumbs.db
+.DS_Store
