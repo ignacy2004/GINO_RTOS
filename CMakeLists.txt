@@ -47,6 +47,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Modules/tmc2209_stepper/tmc2209_stepper.c
     Modules/system_state/system_state.c
+    Modules/tool_controller/tool_controller.c
 )
 
 # Add include paths
@@ -54,6 +55,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     Modules/tmc2209_stepper
     Modules/system_state
+    Modules/tool_controller
 )
 
 # Add project symbols (macros)
