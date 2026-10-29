@@ -22,11 +22,12 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
-#include "tmc2209_stepper.h"
-#include "system_state.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "system_state.h"
+#include "tmc2209_stepper.h"
+#include "tool_controller.h"
 
 /* USER CODE END Includes */
 
@@ -49,26 +50,26 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+/* Definitions for DispatcherTask */
+osThreadId_t DispatcherTaskHandle;
+const osThreadAttr_t DispatcherTask_attributes = {
+  .name = "DispatcherTask",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityAboveNormal,
 };
 /* Definitions for MotorTask */
 osThreadId_t MotorTaskHandle;
 const osThreadAttr_t MotorTask_attributes = {
   .name = "MotorTask",
   .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for KinematicsTask */
 osThreadId_t KinematicsTaskHandle;
 const osThreadAttr_t KinematicsTask_attributes = {
   .name = "KinematicsTask",
   .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityAboveNormal,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for CommTask */
 osThreadId_t CommTaskHandle;
@@ -84,6 +85,11 @@ const osThreadAttr_t ToolTask_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for CommandQueue */
+osMessageQueueId_t CommandQueueHandle;
+const osMessageQueueAttr_t CommandQueue_attributes = {
+  .name = "CommandQueue"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -96,6 +102,7 @@ void StartKinematicsTask(void *argument);
 void StartCommTask(void *argument);
 void StartToolTask(void *argument);
 
+extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
@@ -120,13 +127,17 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of CommandQueue */
+  CommandQueueHandle = osMessageQueueNew (10, 20, &CommandQueue_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  /* creation of DispatcherTask */
+  DispatcherTaskHandle = osThreadNew(StartDefaultTask, NULL, &DispatcherTask_attributes);
 
   /* creation of MotorTask */
   MotorTaskHandle = osThreadNew(StartMotorTask, NULL, &MotorTask_attributes);
@@ -159,6 +170,8 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN StartDefaultTask */
   /* Infinite loop */
   for(;;)
