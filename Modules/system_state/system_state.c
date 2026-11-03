@@ -98,3 +98,29 @@ bool SystemState_IsEstop(void)
     }
     return estopVal;
 }
+
+void SystemState_SetHomed(bool homed)
+{
+    if (stateMutex != NULL)
+    {
+        if (xSemaphoreTake(stateMutex, portMAX_DELAY) == pdTRUE)
+        {
+            globalRobotState.isHomed = homed;
+            xSemaphoreGive(stateMutex);
+        }
+    }
+}
+
+bool SystemState_IsHomed(void)
+{
+    bool homedVal = false;
+    if (stateMutex != NULL)
+    {
+        if (xSemaphoreTake(stateMutex, portMAX_DELAY) == pdTRUE)
+        {
+            homedVal = globalRobotState.isHomed;
+            xSemaphoreGive(stateMutex);
+        }
+    }
+    return homedVal;
+}

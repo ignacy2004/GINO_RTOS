@@ -48,6 +48,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Modules/tmc2209_stepper/tmc2209_stepper.c
     Modules/system_state/system_state.c
     Modules/tool_controller/tool_controller.c
+    Modules/inverse_kinematics/inverse_kinematics.c
 )
 
 # Add include paths
@@ -56,6 +57,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Modules/tmc2209_stepper
     Modules/system_state
     Modules/tool_controller
+    Modules/inverse_kinematics
 )
 
 # Add project symbols (macros)
