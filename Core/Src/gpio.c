@@ -50,16 +50,20 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, J1_STEP_Pin|J1_DIR_Pin|J1_ENABLE_Pin|J2_STEP_Pin
-                          |J2_DIR_Pin|J2_ENABLE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, J1_DIR_Pin|J1_ENABLE_Pin|J2_STEP_Pin|J2_DIR_Pin
+                          |J2_ENABLE_Pin|J1_STEP_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, Z_STEP_Pin|Z_DIR_Pin|Z_ENABLE_Pin|PUMP_PIN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, Z_STEP_Pin|Z_DIR_Pin|Z_ENABLE_Pin|PUMP_PIN_Pin
+                          |COMMS_LED_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : J1_STEP_Pin J1_DIR_Pin J1_ENABLE_Pin J2_STEP_Pin
-                           J2_DIR_Pin J2_ENABLE_Pin */
-  GPIO_InitStruct.Pin = J1_STEP_Pin|J1_DIR_Pin|J1_ENABLE_Pin|J2_STEP_Pin
-                          |J2_DIR_Pin|J2_ENABLE_Pin;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pins : J1_DIR_Pin J1_ENABLE_Pin J2_STEP_Pin J2_DIR_Pin
+                           J2_ENABLE_Pin J1_STEP_Pin SPI1_CS_Pin */
+  GPIO_InitStruct.Pin = J1_DIR_Pin|J1_ENABLE_Pin|J2_STEP_Pin|J2_DIR_Pin
+                          |J2_ENABLE_Pin|J1_STEP_Pin|SPI1_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -71,8 +75,10 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Z_STEP_Pin Z_DIR_Pin Z_ENABLE_Pin PUMP_PIN_Pin */
-  GPIO_InitStruct.Pin = Z_STEP_Pin|Z_DIR_Pin|Z_ENABLE_Pin|PUMP_PIN_Pin;
+  /*Configure GPIO pins : Z_STEP_Pin Z_DIR_Pin Z_ENABLE_Pin PUMP_PIN_Pin
+                           COMMS_LED_Pin */
+  GPIO_InitStruct.Pin = Z_STEP_Pin|Z_DIR_Pin|Z_ENABLE_Pin|PUMP_PIN_Pin
+                          |COMMS_LED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
