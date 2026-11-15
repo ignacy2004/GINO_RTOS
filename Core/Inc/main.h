@@ -57,8 +57,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define J1_STEP_Pin GPIO_PIN_0
-#define J1_STEP_GPIO_Port GPIOA
 #define J1_DIR_Pin GPIO_PIN_1
 #define J1_DIR_GPIO_Port GPIOA
 #define J1_ENABLE_Pin GPIO_PIN_2
@@ -85,6 +83,14 @@ void Error_Handler(void);
 #define PUMP_PIN_GPIO_Port GPIOB
 #define ESTOP_PIN_Pin GPIO_PIN_14
 #define ESTOP_PIN_GPIO_Port GPIOB
+#define UART_TMC_Pin GPIO_PIN_9
+#define UART_TMC_GPIO_Port GPIOA
+#define J1_STEP_Pin GPIO_PIN_10
+#define J1_STEP_GPIO_Port GPIOA
+#define SPI1_CS_Pin GPIO_PIN_15
+#define SPI1_CS_GPIO_Port GPIOA
+#define COMMS_LED_Pin GPIO_PIN_8
+#define COMMS_LED_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
