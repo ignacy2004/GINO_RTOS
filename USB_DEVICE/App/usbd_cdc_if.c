@@ -22,7 +22,9 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include <stdio.h>
+#include <string.h>
+#include "serial_interface.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -94,7 +96,8 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-
+  uint8_t rx_packet_buffer[20];
+  uint8_t rx_index = 0;
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -261,8 +264,16 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
+  
+  // 1. Przekazanie bajtów do naszej maszyny stanów
+  for (uint32_t i = 0; i < *Len; i++) {
+      Serial_ParseByte(Buf[i]);
+  }
+
+  // 2. ODBLOKOWANIE USB - przygotowanie na kolejną paczkę danych
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  
   return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -283,7 +294,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0){
+  if (hcdc == NULL || hcdc->TxState != 0){
     return USBD_BUSY;
   }
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
@@ -316,7 +327,30 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+int _write(int file, char *ptr, int len)
+{
+  (void)file;
+  if (len > 0)
+  {
+    USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+    if (hcdc != NULL && hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED)
+    {
+      uint32_t timeout = 10000;
+      while (CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len) == USBD_BUSY && timeout > 0)
+      {
+        timeout--;
+      }
+    }
+  }
+  return len;
+}
 
+int __io_putchar(int ch)
+{
+  uint8_t c = (uint8_t)ch;
+  _write(1, (char*)&c, 1);
+  return ch;
+}
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**

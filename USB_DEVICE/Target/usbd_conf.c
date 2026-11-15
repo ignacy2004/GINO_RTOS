@@ -91,7 +91,7 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
     __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
 
     /* Peripheral interrupt init */
-    HAL_NVIC_SetPriority(OTG_FS_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(OTG_FS_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
   /* USER CODE BEGIN USB_OTG_FS_MspInit 1 */
 
@@ -193,9 +193,17 @@ static void PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
 void HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
 #endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
 {
-   USBD_SpeedTypeDef speed = USBD_SPEED_FULL;
+  USBD_SpeedTypeDef speed = USBD_SPEED_FULL;
 
-  if ( hpcd->Init.speed != PCD_SPEED_FULL)
+  if ( hpcd->Init.speed == PCD_SPEED_HIGH)
+  {
+    speed = USBD_SPEED_HIGH;
+  }
+  else if ( hpcd->Init.speed == PCD_SPEED_FULL)
+  {
+    speed = USBD_SPEED_FULL;
+  }
+  else
   {
     Error_Handler();
   }

@@ -28,6 +28,10 @@
 #include "system_state.h"
 #include "tmc2209_stepper.h"
 #include "tool_controller.h"
+#include "serial_interface.h"
+#include "dispatcher.h"
+#include "inverse_kinematics.h"
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -48,7 +52,23 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+StepperMotor_t motorJ1;
+StepperMotor_t motorJ2;
+StepperMotor_t motorZ;
 
+void Dispatcher_MoveJoints(int32_t j1_steps, int32_t j2_steps, int32_t j3_steps)
+{
+    Stepper_MoveTo(&motorJ1, j1_steps);
+    Stepper_MoveTo(&motorJ2, j2_steps);
+    Stepper_MoveTo(&motorZ, j3_steps);
+}
+
+void Dispatcher_StopAllMotors(void)
+{
+    Stepper_Stop(&motorJ1);
+    Stepper_Stop(&motorJ2);
+    Stepper_Stop(&motorZ);
+}
 /* USER CODE END Variables */
 /* Definitions for DispatcherTask */
 osThreadId_t DispatcherTaskHandle;
@@ -112,7 +132,18 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
+  SystemState_Init();
+  ToolController_Init(PUMP_PIN_GPIO_Port, PUMP_PIN_Pin);
+  Serial_Init();
 
+  Stepper_Init(&motorJ1, J1_STEP_GPIO_Port, J1_STEP_Pin, J1_DIR_GPIO_Port, J1_DIR_Pin, J1_ENABLE_GPIO_Port, J1_ENABLE_Pin);
+  Stepper_SetEndstop(&motorJ1, J1_LIMIT_GPIO_Port, J1_LIMIT_Pin);
+
+  Stepper_Init(&motorJ2, J2_STEP_GPIO_Port, J2_STEP_Pin, J2_DIR_GPIO_Port, J2_DIR_Pin, J2_ENABLE_GPIO_Port, J2_ENABLE_Pin);
+  Stepper_SetEndstop(&motorJ2, J2_LIMIT_GPIO_Port, J2_LIMIT_Pin);
+
+  Stepper_Init(&motorZ, Z_STEP_GPIO_Port, Z_STEP_Pin, Z_DIR_GPIO_Port, Z_DIR_Pin, Z_ENABLE_GPIO_Port, Z_ENABLE_Pin);
+  Stepper_SetEndstop(&motorZ, Z_LIMIT_GPIO_Port, Z_LIMIT_Pin);
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -173,10 +204,25 @@ void StartDefaultTask(void *argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN StartDefaultTask */
+  CommandFrame_t frame;
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    if (HAL_GPIO_ReadPin(ESTOP_PIN_GPIO_Port, ESTOP_PIN_Pin) == GPIO_PIN_RESET)
+    {
+      if (!SystemState_IsEstop())
+      {
+        SystemState_SetEstop(true);
+        ToolController_EnablePump(false);
+        Dispatcher_StopAllMotors();
+        printf("[ESTOP] Hardware button pressed!\r\n");
+      }
+    }
+
+    if (osMessageQueueGet(CommandQueueHandle, &frame, NULL, 10) == osOK)
+    {
+      Dispatcher_ProcessCommand(&frame);
+    }
   }
   /* USER CODE END StartDefaultTask */
 }
@@ -194,6 +240,19 @@ void StartMotorTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
+    if (!SystemState_IsEstop())
+    {
+      Stepper_UpdateStateMachine(&motorJ1);
+      Stepper_UpdateStateMachine(&motorJ2);
+      Stepper_UpdateStateMachine(&motorZ);
+      SystemState_UpdateSteps(motorJ1.currentPosition, motorJ2.currentPosition, motorZ.currentPosition);
+    }
+    else
+    {
+      Stepper_Stop(&motorJ1);
+      Stepper_Stop(&motorJ2);
+      Stepper_Stop(&motorZ);
+    }
     osDelay(1);
   }
   /* USER CODE END StartMotorTask */
@@ -209,10 +268,15 @@ void StartMotorTask(void *argument)
 void StartKinematicsTask(void *argument)
 {
   /* USER CODE BEGIN StartKinematicsTask */
+  RobotState_t state;
+  Point3D_t cartesian;
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    SystemState_Get(&state);
+    Kinematics_StepsToCartesian(state.currentSteps, &cartesian);
+    SystemState_UpdateCartesian(cartesian.x, cartesian.y, cartesian.z);
+    osDelay(20);
   }
   /* USER CODE END StartKinematicsTask */
 }
@@ -230,7 +294,8 @@ void StartCommTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    HAL_GPIO_TogglePin(COMMS_LED_GPIO_Port, COMMS_LED_Pin);
+    osDelay(500);
   }
   /* USER CODE END StartCommTask */
 }
@@ -248,7 +313,7 @@ void StartToolTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osDelay(50);
   }
   /* USER CODE END StartToolTask */
 }

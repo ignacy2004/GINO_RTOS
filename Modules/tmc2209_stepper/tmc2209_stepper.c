@@ -8,6 +8,9 @@ void Stepper_Init(StepperMotor_t* motor, GPIO_TypeDef* stepPort, uint16_t stepPi
     motor->DirPin = dirPin;
     motor->EnPort = enPort;
     motor->EnPin = enPin;
+    motor->EndstopPort = NULL;
+    motor->EndstopPin = 0;
+    motor->teachInStepsCount = 0;
 
     motor->currentState = STATE_IDLE;
     motor->currentPosition = 0;
@@ -16,6 +19,23 @@ void Stepper_Init(StepperMotor_t* motor, GPIO_TypeDef* stepPort, uint16_t stepPi
     motor->direction = 1;
 
     HAL_GPIO_WritePin(motor->EnPort, motor->EnPin, GPIO_PIN_RESET);
+}
+
+void Stepper_SetEndstop(StepperMotor_t* motor, GPIO_TypeDef* endstopPort, uint16_t endstopPin)
+{
+    motor->EndstopPort = endstopPort;
+    motor->EndstopPin = endstopPin;
+}
+
+void Stepper_StartHoming(StepperMotor_t* motor)
+{
+    motor->currentState = STATE_HOMING;
+}
+
+void Stepper_Stop(StepperMotor_t* motor)
+{
+    motor->stepsToMove = 0;
+    motor->currentState = STATE_IDLE;
 }
 
 void Stepper_MoveTo(StepperMotor_t* motor, int32_t targetSteps)
@@ -81,7 +101,7 @@ void Stepper_UpdateStateMachine(StepperMotor_t* motor)
             HAL_GPIO_WritePin(motor->EnPort, motor->EnPin, GPIO_PIN_RESET);
             HAL_GPIO_WritePin(motor->DirPort, motor->DirPin, GPIO_PIN_RESET); // Kierunek do bazy
 
-            if (HAL_GPIO_ReadPin(motor->EndstopPort, motor->EndstopPin) == GPIO_PIN_RESET)
+            if (motor->EndstopPort != NULL && HAL_GPIO_ReadPin(motor->EndstopPort, motor->EndstopPin) == GPIO_PIN_RESET)
             {
                 HAL_GPIO_WritePin(motor->StepPort, motor->StepPin, GPIO_PIN_SET);
                 for (volatile int i = 0; i < 10; i++);
@@ -105,7 +125,7 @@ void Stepper_UpdateStateMachine(StepperMotor_t* motor)
             
             HAL_GPIO_WritePin(motor->DirPort, motor->DirPin, GPIO_PIN_RESET);
 
-            if (HAL_GPIO_ReadPin(motor->EndstopPort, motor->EndstopPin) == GPIO_PIN_RESET)
+            if (motor->EndstopPort != NULL && HAL_GPIO_ReadPin(motor->EndstopPort, motor->EndstopPin) == GPIO_PIN_RESET)
             {
                 HAL_GPIO_WritePin(motor->StepPort, motor->StepPin, GPIO_PIN_SET);
                 for (volatile int i = 0; i < 10; i++);
