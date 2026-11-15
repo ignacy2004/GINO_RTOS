@@ -33,8 +33,11 @@ typedef struct {
 } StepperMotor_t;
 
 void Stepper_Init(StepperMotor_t* motor, GPIO_TypeDef* stepPort, uint16_t stepPin, GPIO_TypeDef* dirPort, uint16_t dirPin, GPIO_TypeDef* enPort, uint16_t enPin);
+void Stepper_SetEndstop(StepperMotor_t* motor, GPIO_TypeDef* endstopPort, uint16_t endstopPin);
 void Stepper_MoveTo(StepperMotor_t* motor, int32_t targetSteps);
 void Stepper_EnableTeachIn(StepperMotor_t* motor);
+void Stepper_StartHoming(StepperMotor_t* motor);
+void Stepper_Stop(StepperMotor_t* motor);
 void Stepper_UpdateStateMachine(StepperMotor_t* motor);
 
 #endif

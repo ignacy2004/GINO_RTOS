@@ -31,5 +31,7 @@ void SystemState_UpdateCartesian(float x, float y, float z);
 void SystemState_SetPump(bool enable);
 void SystemState_SetEstop(bool estop);
 bool SystemState_IsEstop(void);
+void SystemState_SetHomed(bool homed);
+bool SystemState_IsHomed(void);
 
 #endif
