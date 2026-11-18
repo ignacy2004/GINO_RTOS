@@ -25,6 +25,7 @@ typedef struct {
     uint16_t      EndstopPin;
     
     StepperState_t currentState;
+    bool           isHomed;
     int32_t teachInStepsCount;
     int32_t currentPosition;
     int32_t targetPosition;

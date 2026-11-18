@@ -6,7 +6,7 @@
 #include "tool_controller.h"
 
 void Dispatcher_ProcessCommand(CommandFrame_t* frame) {
-    if (SystemState_IsEstop() && frame->cmd != CMD_ESTOP && frame->cmd != CMD_ESTOP_LEGACY) {
+    if (SystemState_IsEstop() && frame->cmd != CMD_ESTOP && frame->cmd != CMD_ESTOP_LEGACY && frame->cmd != CMD_HOME) {
         printf("[DISPATCHER] E-STOP is active! Ignoring command 0x%02X\r\n", frame->cmd);
         return;
     }
@@ -37,6 +37,15 @@ void Dispatcher_ProcessCommand(CommandFrame_t* frame) {
             break;
         }
 
+        case CMD_HOME: {
+            printf("[DISPATCHER] CMD_HOME -> Starting homing sequence for all axes\r\n");
+            SystemState_SetEstop(false);
+            SystemState_SetHomed(false);
+            Dispatcher_HomeAllAxes();
+            break;
+        }
+
+        case CMD_EFFECTOR_HMI:
         case CMD_EFFECTOR_ACTION: {
             bool enablePump = (frame->param2 > 0.5f);
             printf("[DISPATCHER] CMD_EFFECTOR_ACTION -> Tool: %.0f, State: %s\r\n", 

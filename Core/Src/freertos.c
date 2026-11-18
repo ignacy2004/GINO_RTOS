@@ -63,6 +63,13 @@ void Dispatcher_MoveJoints(int32_t j1_steps, int32_t j2_steps, int32_t j3_steps)
     Stepper_MoveTo(&motorZ, j3_steps);
 }
 
+void Dispatcher_HomeAllAxes(void)
+{
+    Stepper_StartHoming(&motorJ1);
+    Stepper_StartHoming(&motorJ2);
+    Stepper_StartHoming(&motorZ);
+}
+
 void Dispatcher_StopAllMotors(void)
 {
     Stepper_Stop(&motorJ1);
@@ -246,6 +253,16 @@ void StartMotorTask(void *argument)
       Stepper_UpdateStateMachine(&motorJ2);
       Stepper_UpdateStateMachine(&motorZ);
       SystemState_UpdateSteps(motorJ1.currentPosition, motorJ2.currentPosition, motorZ.currentPosition);
+
+      if (!SystemState_IsHomed() &&
+          motorJ1.isHomed && motorJ2.isHomed && motorZ.isHomed &&
+          motorJ1.currentState == STATE_IDLE &&
+          motorJ2.currentState == STATE_IDLE &&
+          motorZ.currentState == STATE_IDLE)
+      {
+        SystemState_SetHomed(true);
+        printf("[HOMING] All axes homed! Position set to (0, 0, 0)\r\n");
+      }
     }
     else
     {

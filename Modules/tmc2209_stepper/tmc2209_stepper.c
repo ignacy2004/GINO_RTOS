@@ -13,6 +13,7 @@ void Stepper_Init(StepperMotor_t* motor, GPIO_TypeDef* stepPort, uint16_t stepPi
     motor->teachInStepsCount = 0;
 
     motor->currentState = STATE_IDLE;
+    motor->isHomed = false;
     motor->currentPosition = 0;
     motor->targetPosition = 0;
     motor->stepsToMove = 0;
@@ -29,6 +30,7 @@ void Stepper_SetEndstop(StepperMotor_t* motor, GPIO_TypeDef* endstopPort, uint16
 
 void Stepper_StartHoming(StepperMotor_t* motor)
 {
+    motor->isHomed = false;
     motor->currentState = STATE_HOMING;
 }
 
@@ -74,6 +76,20 @@ void Stepper_UpdateStateMachine(StepperMotor_t* motor)
         case STATE_MOVING:
             
             HAL_GPIO_WritePin(motor->EnPort, motor->EnPin, GPIO_PIN_RESET);
+
+            // Krańcówka wciśnięta = GPIO_PIN_RESET (zwarta do GND)
+            // Blokuj jazdę w lewo (direction == 1, DIR = SET), pozwól jechać w prawo (direction == -1, DIR = RESET)
+            if (motor->EndstopPort != NULL && HAL_GPIO_ReadPin(motor->EndstopPort, motor->EndstopPin) == GPIO_PIN_RESET)
+            {
+                if (motor->direction == 1)
+                {
+                    motor->stepsToMove = 0;
+                    motor->currentPosition = 0;
+                    motor->targetPosition = 0;
+                    motor->currentState = STATE_IDLE;
+                    break;
+                }
+            }
             
             if (motor->direction == 1) {
                 HAL_GPIO_WritePin(motor->DirPort, motor->DirPin, GPIO_PIN_SET);
@@ -99,9 +115,10 @@ void Stepper_UpdateStateMachine(StepperMotor_t* motor)
         case STATE_HOMING:
             
             HAL_GPIO_WritePin(motor->EnPort, motor->EnPin, GPIO_PIN_RESET);
-            HAL_GPIO_WritePin(motor->DirPort, motor->DirPin, GPIO_PIN_RESET); // Kierunek do bazy
+            HAL_GPIO_WritePin(motor->DirPort, motor->DirPin, GPIO_PIN_SET); // Kierunek do bazy (w lewo, direction == 1)
 
-            if (motor->EndstopPort != NULL && HAL_GPIO_ReadPin(motor->EndstopPort, motor->EndstopPin) == GPIO_PIN_RESET)
+            // Dopóki krańcówka NIE jest wciśnięta (GPIO_PIN_SET z Pull-Up), jedź do bazy
+            if (motor->EndstopPort != NULL && HAL_GPIO_ReadPin(motor->EndstopPort, motor->EndstopPin) == GPIO_PIN_SET)
             {
                 HAL_GPIO_WritePin(motor->StepPort, motor->StepPin, GPIO_PIN_SET);
                 for (volatile int i = 0; i < 10; i++);
@@ -109,7 +126,11 @@ void Stepper_UpdateStateMachine(StepperMotor_t* motor)
             }
             else
             {
+                // Krańcówka wciśnięta (GPIO_PIN_RESET) -> STOP i pozycja = 0
                 motor->currentPosition = 0;
+                motor->targetPosition = 0;
+                motor->stepsToMove = 0;
+                motor->isHomed = true;
                 motor->currentState = STATE_IDLE;
             }
             break;
@@ -123,9 +144,9 @@ void Stepper_UpdateStateMachine(StepperMotor_t* motor)
             
             HAL_GPIO_WritePin(motor->EnPort, motor->EnPin, GPIO_PIN_RESET);
             
-            HAL_GPIO_WritePin(motor->DirPort, motor->DirPin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(motor->DirPort, motor->DirPin, GPIO_PIN_SET);
 
-            if (motor->EndstopPort != NULL && HAL_GPIO_ReadPin(motor->EndstopPort, motor->EndstopPin) == GPIO_PIN_RESET)
+            if (motor->EndstopPort != NULL && HAL_GPIO_ReadPin(motor->EndstopPort, motor->EndstopPin) == GPIO_PIN_SET)
             {
                 HAL_GPIO_WritePin(motor->StepPort, motor->StepPin, GPIO_PIN_SET);
                 for (volatile int i = 0; i < 10; i++);
@@ -136,6 +157,8 @@ void Stepper_UpdateStateMachine(StepperMotor_t* motor)
             else
             {
                 motor->currentPosition = 0;
+                motor->targetPosition = 0;
+                motor->stepsToMove = 0;
                 motor->currentState = STATE_IDLE;
             }
             break;
