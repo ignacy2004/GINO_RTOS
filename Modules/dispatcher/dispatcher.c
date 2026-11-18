@@ -37,6 +37,13 @@ void Dispatcher_ProcessCommand(CommandFrame_t* frame) {
             break;
         }
 
+        case CMD_HOMING: {
+            uint8_t axisId = (uint8_t)lroundf(frame->param1);
+            printf("[DISPATCHER] CMD_HOMING -> Axis: %u (0=ALL, 1=J1, 2=J2, 3=Z)\r\n", axisId);
+            Dispatcher_HomeMotors(axisId);
+            break;
+        }
+
         case CMD_EFFECTOR_ACTION: {
             bool enablePump = (frame->param2 > 0.5f);
             printf("[DISPATCHER] CMD_EFFECTOR_ACTION -> Tool: %.0f, State: %s\r\n", 

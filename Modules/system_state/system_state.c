@@ -35,16 +35,9 @@ void SystemState_Get(RobotState_t* outState)
 
 void SystemState_UpdateSteps(int32_t j1, int32_t j2, int32_t j3)
 {
-    if (stateMutex != NULL)
-    {
-        if (xSemaphoreTake(stateMutex, portMAX_DELAY) == pdTRUE)
-        {
-            globalRobotState.currentSteps.j1_steps = j1;
-            globalRobotState.currentSteps.j2_steps = j2;
-            globalRobotState.currentSteps.j3_steps = j3;
-            xSemaphoreGive(stateMutex);
-        }
-    }
+    globalRobotState.currentSteps.j1_steps = j1;
+    globalRobotState.currentSteps.j2_steps = j2;
+    globalRobotState.currentSteps.j3_steps = j3;
 }
 
 void SystemState_UpdateCartesian(float x, float y, float z)
@@ -63,64 +56,30 @@ void SystemState_UpdateCartesian(float x, float y, float z)
 
 void SystemState_SetPump(bool enable)
 {
-    if (stateMutex != NULL)
-    {
-        if (xSemaphoreTake(stateMutex, portMAX_DELAY) == pdTRUE)
-        {
-            globalRobotState.pumpState = enable;
-            xSemaphoreGive(stateMutex);
-        }
-    }
+    globalRobotState.pumpState = enable;
 }
 
 void SystemState_SetEstop(bool estop)
 {
-    if (stateMutex != NULL)
-    {
-        if (xSemaphoreTake(stateMutex, portMAX_DELAY) == pdTRUE)
-        {
-            globalRobotState.emergencyStop = estop;
-            xSemaphoreGive(stateMutex);
-        }
-    }
+    globalRobotState.emergencyStop = estop;
+}
+
+void SystemState_SetEstopFromISR(bool estop)
+{
+    globalRobotState.emergencyStop = estop;
 }
 
 bool SystemState_IsEstop(void)
 {
-    bool estopVal = false;
-    if (stateMutex != NULL)
-    {
-        if (xSemaphoreTake(stateMutex, portMAX_DELAY) == pdTRUE)
-        {
-            estopVal = globalRobotState.emergencyStop;
-            xSemaphoreGive(stateMutex);
-        }
-    }
-    return estopVal;
+    return globalRobotState.emergencyStop;
 }
 
 void SystemState_SetHomed(bool homed)
 {
-    if (stateMutex != NULL)
-    {
-        if (xSemaphoreTake(stateMutex, portMAX_DELAY) == pdTRUE)
-        {
-            globalRobotState.isHomed = homed;
-            xSemaphoreGive(stateMutex);
-        }
-    }
+    globalRobotState.isHomed = homed;
 }
 
 bool SystemState_IsHomed(void)
 {
-    bool homedVal = false;
-    if (stateMutex != NULL)
-    {
-        if (xSemaphoreTake(stateMutex, portMAX_DELAY) == pdTRUE)
-        {
-            homedVal = globalRobotState.isHomed;
-            xSemaphoreGive(stateMutex);
-        }
-    }
-    return homedVal;
+    return globalRobotState.isHomed;
 }

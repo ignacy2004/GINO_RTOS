@@ -9,6 +9,7 @@
 
 #define CMD_JOINT_MOVE      0x01
 #define CMD_LINEAR_MOVE     0x02
+#define CMD_HOMING          0x03
 #define CMD_EFFECTOR_ACTION 0x05
 #define CMD_ESTOP           0x10
 #define CMD_ESTOP_LEGACY    0xFF

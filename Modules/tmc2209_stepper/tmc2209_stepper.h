@@ -24,20 +24,27 @@ typedef struct {
     GPIO_TypeDef* EndstopPort;
     uint16_t      EndstopPin;
     
-    StepperState_t currentState;
+    volatile StepperState_t currentState;
     int32_t teachInStepsCount;
-    int32_t currentPosition;
-    int32_t targetPosition;
-    int32_t stepsToMove;
-    int8_t direction;
+    volatile int32_t currentPosition;
+    volatile int32_t targetPosition;
+    volatile int32_t stepsToMove;
+    volatile int8_t direction;
+    volatile bool isHomed;
+    uint8_t endstopDebounceCount;
+    int32_t maxSteps;
+    bool invertDir;
 } StepperMotor_t;
 
 void Stepper_Init(StepperMotor_t* motor, GPIO_TypeDef* stepPort, uint16_t stepPin, GPIO_TypeDef* dirPort, uint16_t dirPin, GPIO_TypeDef* enPort, uint16_t enPin);
 void Stepper_SetEndstop(StepperMotor_t* motor, GPIO_TypeDef* endstopPort, uint16_t endstopPin);
+void Stepper_SetInvertDir(StepperMotor_t* motor, bool invert);
+void Stepper_SetMaxSteps(StepperMotor_t* motor, int32_t maxSteps);
 void Stepper_MoveTo(StepperMotor_t* motor, int32_t targetSteps);
 void Stepper_EnableTeachIn(StepperMotor_t* motor);
 void Stepper_StartHoming(StepperMotor_t* motor);
 void Stepper_Stop(StepperMotor_t* motor);
+void Stepper_OnEndstopTriggered(StepperMotor_t* motor);
 void Stepper_UpdateStateMachine(StepperMotor_t* motor);
 
 #endif

@@ -333,13 +333,9 @@ int _write(int file, char *ptr, int len)
   if (len > 0)
   {
     USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-    if (hcdc != NULL && hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED)
+    if (hcdc != NULL && hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED && hcdc->TxState == 0)
     {
-      uint32_t timeout = 10000;
-      while (CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len) == USBD_BUSY && timeout > 0)
-      {
-        timeout--;
-      }
+      CDC_Transmit_FS((uint8_t*)ptr, (uint16_t)len);
     }
   }
   return len;

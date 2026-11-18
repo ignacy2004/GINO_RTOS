@@ -30,6 +30,7 @@ void SystemState_UpdateSteps(int32_t j1, int32_t j2, int32_t j3);
 void SystemState_UpdateCartesian(float x, float y, float z);
 void SystemState_SetPump(bool enable);
 void SystemState_SetEstop(bool estop);
+void SystemState_SetEstopFromISR(bool estop);
 bool SystemState_IsEstop(void);
 void SystemState_SetHomed(bool homed);
 bool SystemState_IsHomed(void);
