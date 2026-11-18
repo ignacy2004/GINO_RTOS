@@ -62,6 +62,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Modules/inverse_kinematics
     Modules/dispatcher
     Modules/serial_interface
+    Modules
 )
 
 # Add project symbols (macros)

@@ -32,6 +32,7 @@
 #include "dispatcher.h"
 #include "inverse_kinematics.h"
 #include <stdio.h>
+#include "config.h"
 
 /* USER CODE END Includes */
 
@@ -61,6 +62,13 @@ void Dispatcher_MoveJoints(int32_t j1_steps, int32_t j2_steps, int32_t j3_steps)
     Stepper_MoveTo(&motorJ1, j1_steps);
     Stepper_MoveTo(&motorJ2, j2_steps);
     Stepper_MoveTo(&motorZ, j3_steps);
+}
+
+void Dispatcher_HomeAllAxes(void)
+{
+    Stepper_StartHoming(&motorJ1);
+    Stepper_StartHoming(&motorJ2);
+    Stepper_StartHoming(&motorZ);
 }
 
 void Dispatcher_StopAllMotors(void)
@@ -137,13 +145,13 @@ void MX_FREERTOS_Init(void) {
   Serial_Init();
 
   Stepper_Init(&motorJ1, J1_STEP_GPIO_Port, J1_STEP_Pin, J1_DIR_GPIO_Port, J1_DIR_Pin, J1_ENABLE_GPIO_Port, J1_ENABLE_Pin);
-  Stepper_SetEndstop(&motorJ1, J1_LIMIT_GPIO_Port, J1_LIMIT_Pin);
+  Limit_Switch_Init(&motorJ1, J1_LIMIT_GPIO_Port, J1_LIMIT_Pin);
 
   Stepper_Init(&motorJ2, J2_STEP_GPIO_Port, J2_STEP_Pin, J2_DIR_GPIO_Port, J2_DIR_Pin, J2_ENABLE_GPIO_Port, J2_ENABLE_Pin);
-  Stepper_SetEndstop(&motorJ2, J2_LIMIT_GPIO_Port, J2_LIMIT_Pin);
+  Limit_Switch_Init(&motorJ2, J2_LIMIT_GPIO_Port, J2_LIMIT_Pin);
 
   Stepper_Init(&motorZ, Z_STEP_GPIO_Port, Z_STEP_Pin, Z_DIR_GPIO_Port, Z_DIR_Pin, Z_ENABLE_GPIO_Port, Z_ENABLE_Pin);
-  Stepper_SetEndstop(&motorZ, Z_LIMIT_GPIO_Port, Z_LIMIT_Pin);
+  Limit_Switch_Init(&motorZ, Z_LIMIT_GPIO_Port, Z_LIMIT_Pin);
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -246,12 +254,35 @@ void StartMotorTask(void *argument)
       Stepper_UpdateStateMachine(&motorJ2);
       Stepper_UpdateStateMachine(&motorZ);
       SystemState_UpdateSteps(motorJ1.currentPosition, motorJ2.currentPosition, motorZ.currentPosition);
+
+      if (!SystemState_IsHomed() &&
+          motorJ1.isHomed && motorJ2.isHomed && motorZ.isHomed &&
+          motorJ1.currentState == STATE_IDLE &&
+          motorJ2.currentState == STATE_IDLE &&
+          motorZ.currentState == STATE_IDLE)
+      {
+        SystemState_SetHomed(true);
+        printf("[HOMING] All axes homed! Position set to (0, 0, 0)\r\n");
+      }
     }
     else
     {
       Stepper_Stop(&motorJ1);
       Stepper_Stop(&motorJ2);
       Stepper_Stop(&motorZ);
+    }
+
+    if (motorJ1.currentPosition > J1_MAX_STEPS && motorJ1.direction > 0)
+    {
+        Stepper_Stop(&motorJ1);
+    }
+    if (motorJ2.currentPosition > J2_MAX_STEPS && motorJ2.direction > 0)
+    {
+        Stepper_Stop(&motorJ2);
+    }
+    if (motorZ.currentPosition > Z_MAX_STEPS && motorZ.direction > 0)
+    {
+        Stepper_Stop(&motorZ);
     }
     osDelay(1);
   }
@@ -269,13 +300,13 @@ void StartKinematicsTask(void *argument)
 {
   /* USER CODE BEGIN StartKinematicsTask */
   RobotState_t state;
-  Point3D_t cartesian;
+  // Point3D_t cartesian;
   /* Infinite loop */
   for(;;)
   {
     SystemState_Get(&state);
-    Kinematics_StepsToCartesian(state.currentSteps, &cartesian);
-    SystemState_UpdateCartesian(cartesian.x, cartesian.y, cartesian.z);
+    // Kinematics_StepsToCartesian(state.currentSteps, &cartesian);
+    // SystemState_UpdateCartesian(cartesian.x, cartesian.y, cartesian.z);
     osDelay(20);
   }
   /* USER CODE END StartKinematicsTask */

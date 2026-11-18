@@ -21,10 +21,11 @@ typedef struct {
     uint16_t      DirPin;
     GPIO_TypeDef* EnPort;
     uint16_t      EnPin;
-    GPIO_TypeDef* EndstopPort;
-    uint16_t      EndstopPin;
+    GPIO_TypeDef* Limit_SwitchPort;
+    uint16_t      Limit_SwitchPin;
     
     StepperState_t currentState;
+    bool           isHomed;
     int32_t teachInStepsCount;
     int32_t currentPosition;
     int32_t targetPosition;
@@ -33,11 +34,14 @@ typedef struct {
 } StepperMotor_t;
 
 void Stepper_Init(StepperMotor_t* motor, GPIO_TypeDef* stepPort, uint16_t stepPin, GPIO_TypeDef* dirPort, uint16_t dirPin, GPIO_TypeDef* enPort, uint16_t enPin);
-void Stepper_SetEndstop(StepperMotor_t* motor, GPIO_TypeDef* endstopPort, uint16_t endstopPin);
+void Limit_Switch_Init(StepperMotor_t* motor, GPIO_TypeDef* Limit_SwitchPort, uint16_t Limit_SwitchPin);
 void Stepper_MoveTo(StepperMotor_t* motor, int32_t targetSteps);
 void Stepper_EnableTeachIn(StepperMotor_t* motor);
 void Stepper_StartHoming(StepperMotor_t* motor);
 void Stepper_Stop(StepperMotor_t* motor);
 void Stepper_UpdateStateMachine(StepperMotor_t* motor);
-
+bool limit_switch_not_pressed(StepperMotor_t* motor);
+void set_axis_homed(StepperMotor_t* motor);
+void move_one_step(StepperMotor_t* motor);
+bool limit_switch_pressed(StepperMotor_t* motor);
 #endif
