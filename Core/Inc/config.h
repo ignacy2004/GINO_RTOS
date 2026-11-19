@@ -16,8 +16,8 @@
 // 2. PRZELOZENIA MECHANICZNE (PRZEKLADNIE PASKOWE / SRUBOWE)
 // ============================================================================
 // Przelozenie = (liczba zebow kola odbiorczego) / (liczba zebow kola na silniku)
-#define GEAR_RATIO_J1               3.75f  // Przelozenie osi J1 (np. 50:3 = 16.66)
-#define GEAR_RATIO_J2               3.75f  // Przelozenie osi J2 (np. 50:3 = 16.66)
+#define GEAR_RATIO_J1               3.84f  // Przelozenie osi J1 (np. 50:3 = 16.66)
+#define GEAR_RATIO_J2               3.84f  // Przelozenie osi J2 (np. 50:3 = 16.66)
 #define GEAR_RATIO_Z                1.0f    // 1.0 jesli silnik napedza srube bezposrednio
 #define Z_SCREW_LEAD_MM             8.0f    // Sruba fi8: Tr8x8 (standard drukarek 3D) = 8.0f mm/obr (Tr8x4 = 4.0f, Tr8x2 = 2.0f, M8 = 1.25f)
 
@@ -50,8 +50,8 @@
 // 5. LIMITY PROGRAMOWE OD KRANCOWKI (SOFT LIMITS)
 // ============================================================================
 // Maksymalny dozwolony ruch od krancowki (0) w stopniach / mm:
-#define J1_MAX_TRAVEL_DEG           180.0f
-#define J2_MAX_TRAVEL_DEG           180.0f
+#define J1_MAX_TRAVEL_DEG           170.0f
+#define J2_MAX_TRAVEL_DEG           170.0f
 #define Z_MAX_TRAVEL_MM             100.0f
 
 // Maksymalna liczba krokow od krancowki (mozna tez wpisac zmierzona liczbe krokow wprost):
