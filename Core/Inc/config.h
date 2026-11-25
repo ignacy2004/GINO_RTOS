@@ -59,4 +59,17 @@
 #define J2_MAX_STEPS                ((int32_t)(J2_MAX_TRAVEL_DEG * STEPS_PER_DEG_J2))
 #define Z_MAX_STEPS                 ((int32_t)(Z_MAX_TRAVEL_MM  * STEPS_PER_MM_Z))
 
+// ============================================================================
+// 6. CZESTOTLIWOSC TAKTOWANIA SILNIKOW (HARDWARE TIMER TIM2)
+// ============================================================================
+// Bazowa czestotliwosc Timera krokow [Hz] (czestotliwosc najszybszej osi - osi Z)
+#define STEPPER_BASE_FREQ_HZ        3000U
+
+// Dzielniki predkosci dla poszczegolnych osi:
+// Czestotliwosc osi = STEPPER_BASE_FREQ_HZ / DIVIDER
+// Z_STEP_DIVIDER = 1 -> Os Z jedzie z pelna predkoscia 3000 Hz (3x szybciej!)
+// J1_J2_STEP_DIVIDER = 3 -> Osie J1 i J2 jada z predkoscia 3000 / 3 = 1000 Hz
+#define Z_STEP_DIVIDER              1U
+#define J1_J2_STEP_DIVIDER          3U
+
 #endif // ROBOT_CONFIG_H
