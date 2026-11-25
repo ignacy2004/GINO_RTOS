@@ -440,8 +440,6 @@ void StartKinematicsTask(void *argument)
     SystemState_Get(&state);
     Kinematics_StepsToCartesian(state.currentSteps, &cartesian);
     SystemState_UpdateCartesian(cartesian.x, cartesian.y, cartesian.z);
-    Kinematics_StepsToCartesian(state.currentSteps, &cartesian);
-    SystemState_UpdateCartesian(cartesian.x, cartesian.y, cartesian.z);
 
     if (SystemState_ConsumeTeachInSteps(&teachSteps))
     {
