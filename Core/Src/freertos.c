@@ -431,12 +431,29 @@ void StartKinematicsTask(void *argument)
   /* USER CODE BEGIN StartKinematicsTask */
   RobotState_t state;
   Point3D_t cartesian;
+  JointSteps_t teachSteps;
+  Point3D_t teachCartesian;
+  uint8_t completedCmd = 0;
   /* Infinite loop */
   for(;;)
   {
     SystemState_Get(&state);
     Kinematics_StepsToCartesian(state.currentSteps, &cartesian);
     SystemState_UpdateCartesian(cartesian.x, cartesian.y, cartesian.z);
+    Kinematics_StepsToCartesian(state.currentSteps, &cartesian);
+    SystemState_UpdateCartesian(cartesian.x, cartesian.y, cartesian.z);
+
+    if (SystemState_ConsumeTeachInSteps(&teachSteps))
+    {
+      Kinematics_StepsToCartesian(teachSteps, &teachCartesian);
+      Serial_SendFrame(CMD_TEACH_RESPONSE, teachCartesian.x, teachCartesian.y, teachCartesian.z);
+    }
+
+    if (SystemState_ConsumeCompletedMotionAck(&completedCmd))
+    {
+      Serial_SendFrame(CMD_ACK, (float)completedCmd, 1.0f, 0.0f);
+    }
+
     osDelay(20);
   }
   /* USER CODE END StartKinematicsTask */
