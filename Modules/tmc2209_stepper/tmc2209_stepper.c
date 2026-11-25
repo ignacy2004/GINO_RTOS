@@ -18,12 +18,22 @@ void Stepper_Init(StepperMotor_t* motor, GPIO_TypeDef* stepPort, uint16_t stepPi
     // Initialize state variables
     motor->currentState = STATE_IDLE;
     motor->isHomed = false;
+    motor->isTeachInDone = false;
+    motor->stepDivider = 1;
+    motor->stepTickCounter = 0;
+    motor->teachInStepsCount = 0;
     motor->currentPosition = 0;
     motor->targetPosition = 0;
     motor->stepsToMove = 0;
     motor->direction = 1;
 
     HAL_GPIO_WritePin(motor->EnPort, motor->EnPin, GPIO_PIN_RESET);
+}
+
+void Stepper_SetSpeedDivider(StepperMotor_t* motor, uint8_t divider)
+{
+    motor->stepDivider = (divider > 0) ? divider : 1;
+    motor->stepTickCounter = 0;
 }
 
 void Limit_Switch_Init(StepperMotor_t* motor, GPIO_TypeDef* Limit_SwitchPort, uint16_t Limit_SwitchPin)
@@ -41,6 +51,7 @@ void Stepper_StartHoming(StepperMotor_t* motor)
 
 void Stepper_Stop(StepperMotor_t* motor)
 {
+    HAL_GPIO_WritePin(motor->StepPort, motor->StepPin, GPIO_PIN_RESET);
     motor->stepsToMove = 0;
     motor->currentState = STATE_IDLE;
 }
@@ -72,8 +83,36 @@ void Stepper_EnableTeachIn(StepperMotor_t* motor)
     motor->currentState = STATE_TEACH_IN;
 }
 
+void Stepper_DisableTeachIn(StepperMotor_t* motor)
+{
+    HAL_GPIO_WritePin(motor->EnPort, motor->EnPin, GPIO_PIN_RESET);
+
+    motor->currentState = STATE_IDLE;
+}
+
+void Stepper_StartTeachInReturn(StepperMotor_t* motor)
+{
+    motor->teachInStepsCount = 0;
+    motor->isTeachInDone = false;
+    motor->isHomed = false;
+    motor->direction = -1;
+    motor->currentState = STATE_TEACH_IN_RETURN;
+}
+
 void Stepper_UpdateStateMachine(StepperMotor_t* motor)
 {
+    if (motor->currentState == STATE_MOVING ||
+        motor->currentState == STATE_HOMING ||
+        motor->currentState == STATE_TEACH_IN_RETURN)
+    {
+        motor->stepTickCounter++;
+        if (motor->stepTickCounter < motor->stepDivider)
+        {
+            return;
+        }
+        motor->stepTickCounter = 0;
+    }
+
     switch (motor->currentState)
     {
         case STATE_IDLE:
@@ -130,9 +169,25 @@ void Stepper_UpdateStateMachine(StepperMotor_t* motor)
             break;
 
         case STATE_TEACH_IN:
+        
+            HAL_GPIO_WritePin(motor->EnPort, motor->EnPin, GPIO_PIN_SET);    
             break;
 
         case STATE_TEACH_IN_RETURN:
+            
+            HAL_GPIO_WritePin(motor->EnPort, motor->EnPin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(motor->DirPort, motor->DirPin, GPIO_PIN_SET);
+
+            if (limit_switch_not_pressed(motor))
+            {
+                move_one_step(motor);
+                motor->teachInStepsCount++;
+            }
+            else
+            {
+                set_axis_homed(motor);
+                motor->isTeachInDone = true;
+            }
             break;
         
     }
@@ -148,15 +203,15 @@ bool limit_switch_pressed(StepperMotor_t* motor) {
 }
 
 void set_axis_homed(StepperMotor_t* motor) {
+    HAL_GPIO_WritePin(motor->StepPort, motor->StepPin, GPIO_PIN_RESET);
     motor->currentPosition = 0;
     motor->targetPosition = 0;
     motor->stepsToMove = 0;
     motor->isHomed = true;
     motor->currentState = STATE_IDLE;
 }
-void move_one_step(StepperMotor_t* motor){
-    HAL_GPIO_WritePin(motor->StepPort, motor->StepPin, GPIO_PIN_SET);
-    for (volatile int i = 0; i < 50; i++);
-    HAL_GPIO_WritePin(motor->StepPort, motor->StepPin, GPIO_PIN_RESET);
 
+void move_one_step(StepperMotor_t* motor) {
+    // Tylko zbocze narastające (HIGH) - zbocze opadające (LOW) generuje sprzętowy Timer TIM2 w następnym półokresie!
+    HAL_GPIO_WritePin(motor->StepPort, motor->StepPin, GPIO_PIN_SET);
 }

@@ -1,6 +1,7 @@
 #include "serial_interface.h"
 #include "dispatcher.h"
 #include "cmsis_os2.h"
+#include "usbd_cdc_if.h"
 
 extern osMessageQueueId_t CommandQueueHandle;
 
@@ -65,5 +66,27 @@ void Serial_ParseByte(uint8_t incoming_byte) {
                 byte_count = 0;
             }
             break;
+    }
+}
+
+void Serial_SendFrame(uint8_t cmd, float param1, float param2, float param3) {
+    CommandFrame_t tx_frame;
+    tx_frame.sync1 = SYNC_BYTE_1;
+    tx_frame.sync2 = SYNC_BYTE_2;
+    tx_frame.cmd = cmd;
+    tx_frame.param1 = param1;
+    tx_frame.param2 = param2;
+    tx_frame.param3 = param3;
+
+    uint8_t* raw_bytes = (uint8_t*)&tx_frame;
+    uint8_t crc = 0;
+    for (size_t i = 0; i < sizeof(CommandFrame_t) - 1; i++) {
+        crc ^= raw_bytes[i];
+    }
+    tx_frame.crc = crc;
+
+    uint32_t timeout = 10000;
+    while (CDC_Transmit_FS(raw_bytes, sizeof(CommandFrame_t)) == USBD_BUSY && timeout > 0) {
+        timeout--;
     }
 }

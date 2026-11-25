@@ -46,7 +46,7 @@
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-
+extern void StepperTimer_ISR(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -189,5 +189,12 @@ void OTG_FS_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
-
+void TIM2_IRQHandler(void)
+{
+  if ((TIM2->SR & TIM_SR_UIF) != 0U)
+  {
+    TIM2->SR = ~TIM_SR_UIF;
+    StepperTimer_ISR();
+  }
+}
 /* USER CODE END 1 */
