@@ -490,26 +490,40 @@ void StartCommTask(void *argument)
 void StartToolTask(void *argument)
 {
   /* USER CODE BEGIN StartToolTask */
-  uint8_t delayCmd = 0;
-  uint32_t delayMs = 0;
+  uint8_t activeDelayCmd = 0;
+  uint32_t delayStartTick = 0;
+  uint32_t delayDurationMs = 0;
+  bool isDelayActive = false;
+
+  uint8_t newCmd = 0;
+  uint32_t newDelayMs = 0;
   /* Infinite loop */
   for(;;)
   {
-    if (SystemState_ConsumePendingDelay(&delayCmd, &delayMs))
+    // 1. Sprawdź czy przyszło nowe zlecenie CMD_DELAY (bez blokowania pętli!)
+    if (SystemState_ConsumePendingDelay(&newCmd, &newDelayMs))
     {
-      uint32_t elapsed = 0;
-      while (elapsed < delayMs && !SystemState_IsEstop())
+      activeDelayCmd = newCmd;
+      delayDurationMs = newDelayMs;
+      delayStartTick = osKernelGetTickCount();
+      isDelayActive = true;
+    }
+
+    // 2. Nieblokujące sprawdzanie upływu czasu na podstawie licznika ticków RTOS
+    if (isDelayActive)
+    {
+      if (SystemState_IsEstop())
       {
-        uint32_t step = (delayMs - elapsed > 20) ? 20 : (delayMs - elapsed);
-        osDelay(step);
-        elapsed += step;
+        isDelayActive = false;
       }
-      if (!SystemState_IsEstop())
+      else if ((osKernelGetTickCount() - delayStartTick) >= delayDurationMs)
       {
-        Serial_SendFrame(CMD_ACK, (float)delayCmd, 1.0f, 0.0f);
+        isDelayActive = false;
+        Serial_SendFrame(CMD_ACK, (float)activeDelayCmd, 1.0f, 0.0f);
       }
     }
-    osDelay(20);
+
+    osDelay(10);
   }
   /* USER CODE END StartToolTask */
 }
