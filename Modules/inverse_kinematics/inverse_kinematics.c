@@ -32,10 +32,22 @@ bool Kinematics_CartesianToSteps(Point3D_t target, JointSteps_t* outSteps)
     float k2 = L2_LENGTH * s2;
     float theta1 = atan2f(target.y * k1 - target.x * k2, target.x * k1 + target.y * k2);
 
-    // Przeliczenie na kroki
-    outSteps->j1_steps = (int32_t)lroundf((theta1 * RAD_TO_DEG) * STEPS_PER_DEG_J1);
-    outSteps->j2_steps = (int32_t)lroundf((theta2 * RAD_TO_DEG) * STEPS_PER_DEG_J2);
-    outSteps->j3_steps = (int32_t)lroundf(target.z * STEPS_PER_MM_Z);
+    // Przeliczenie na kroki (z uwzglednieniem offsetow katowych krancowek J1_HOME_ANGLE_DEG i J2_HOME_ANGLE_DEG!)
+    float deg1 = (theta1 * RAD_TO_DEG) - J1_HOME_ANGLE_DEG;
+    float deg2 = (theta2 * RAD_TO_DEG) - J2_HOME_ANGLE_DEG;
+    float posZ = target.z - Z_HOME_POS_MM;
+
+    if (deg1 < 0.0f) deg1 = 0.0f;
+    if (deg2 < 0.0f) deg2 = 0.0f;
+    if (posZ < 0.0f) posZ = 0.0f;
+
+    outSteps->j1_steps = (int32_t)lroundf(deg1 * STEPS_PER_DEG_J1);
+    outSteps->j2_steps = (int32_t)lroundf(deg2 * STEPS_PER_DEG_J2);
+    outSteps->j3_steps = (int32_t)lroundf(posZ * STEPS_PER_MM_Z);
+
+    if (outSteps->j1_steps > J1_MAX_STEPS) outSteps->j1_steps = J1_MAX_STEPS;
+    if (outSteps->j2_steps > J2_MAX_STEPS) outSteps->j2_steps = J2_MAX_STEPS;
+    if (outSteps->j3_steps > Z_MAX_STEPS)  outSteps->j3_steps = Z_MAX_STEPS;
 
     return true;
 }

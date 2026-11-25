@@ -74,7 +74,7 @@ static void StepperTimer_Init(void)
     TIM2->SR  = 0U;
     TIM2->DIER = TIM_DIER_UIE;
 
-    HAL_NVIC_SetPriority(TIM2_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(TIM2_IRQn, 7, 0);
     HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
     TIM2->CR1 |= TIM_CR1_CEN;
@@ -133,16 +133,19 @@ void StepperTimer_ISR(void)
 
 void Dispatcher_MoveJoints(int32_t j1_steps, int32_t j2_steps, int32_t j3_steps)
 {
+    __disable_irq();
     pendingHomeJ1J2 = false;
     pendingTeachReturnJ1J2 = false;
     Stepper_MoveTo(&motorJ1, j1_steps);
     Stepper_MoveTo(&motorJ2, j2_steps);
     Stepper_MoveTo(&motorZ, j3_steps);
+    __enable_irq();
 }
 
 void Dispatcher_HomeAllAxes(void)
 {
     // Etap 1: Zatrzymaj J1 i J2, wyzeruj ich flagę isHomed i zbazuj najpierw oś Z!
+    __disable_irq();
     pendingTeachReturnJ1J2 = false;
     Stepper_Stop(&motorJ1);
     Stepper_Stop(&motorJ2);
@@ -151,6 +154,7 @@ void Dispatcher_HomeAllAxes(void)
 
     pendingHomeJ1J2 = true;
     Stepper_StartHoming(&motorZ);
+    __enable_irq();
 }
 
 void Dispatcher_SetTeachMode(uint8_t axisId, bool releaseDrive)
