@@ -59,6 +59,7 @@ void Stepper_Stop(StepperMotor_t* motor)
 void Stepper_MoveTo(StepperMotor_t* motor, int32_t targetSteps)
 {
     motor->currentState = STATE_IDLE;
+    motor->stepTickCounter = 0;
     motor->targetPosition = targetSteps;
     int32_t delta = targetSteps - motor->currentPosition;
     if (delta > 0) {

@@ -70,6 +70,7 @@ void Serial_ParseByte(uint8_t incoming_byte) {
 }
 
 void Serial_SendFrame(uint8_t cmd, float param1, float param2, float param3) {
+    static uint8_t tx_buf[sizeof(CommandFrame_t)];
     CommandFrame_t tx_frame;
     tx_frame.sync1 = SYNC_BYTE_1;
     tx_frame.sync2 = SYNC_BYTE_2;
@@ -82,11 +83,13 @@ void Serial_SendFrame(uint8_t cmd, float param1, float param2, float param3) {
     uint8_t crc = 0;
     for (size_t i = 0; i < sizeof(CommandFrame_t) - 1; i++) {
         crc ^= raw_bytes[i];
+        tx_buf[i] = raw_bytes[i];
     }
     tx_frame.crc = crc;
+    tx_buf[sizeof(CommandFrame_t) - 1] = crc;
 
     uint32_t timeout = 10000;
-    while (CDC_Transmit_FS(raw_bytes, sizeof(CommandFrame_t)) == USBD_BUSY && timeout > 0) {
+    while (CDC_Transmit_FS(tx_buf, sizeof(CommandFrame_t)) == USBD_BUSY && timeout > 0) {
         timeout--;
     }
 }
