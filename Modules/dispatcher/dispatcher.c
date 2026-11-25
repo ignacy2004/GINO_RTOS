@@ -22,19 +22,22 @@ void Dispatcher_ProcessCommand(CommandFrame_t* frame) {
         }
 
         case CMD_LINEAR_MOVE: {
-            // printf("[DISPATCHER] CMD_LINEAR_MOVE -> X:%.2f Y:%.2f Z:%.2f\r\n", 
-            //        frame->param1, frame->param2, frame->param3);
-            // Point3D_t target = {
-            //     .x = frame->param1,
-            //     .y = frame->param2,
-            //     .z = frame->param3
-            // };
-            // JointSteps_t targetSteps;
-            // if (Kinematics_CartesianToSteps(target, &targetSteps)) {
-            //     Dispatcher_MoveJoints(targetSteps.j1_steps, targetSteps.j2_steps, targetSteps.j3_steps);
-            // } else {
-            //     printf("[DISPATCHER] Linear target unreachable!\r\n");
-            // }
+            printf("[DISPATCHER] CMD_LINEAR_MOVE -> X:%.2f Y:%.2f Z:%.2f\r\n", 
+                   frame->param1, frame->param2, frame->param3);
+            Point3D_t target = {
+                .x = frame->param1,
+                .y = frame->param2,
+                .z = frame->param3
+            };
+            JointSteps_t targetSteps;
+            if (Kinematics_CartesianToSteps(target, &targetSteps)) {
+                printf("[KINEMATICS] Target Steps -> J1:%ld J2:%ld Z:%ld\r\n",
+                       (long)targetSteps.j1_steps, (long)targetSteps.j2_steps, (long)targetSteps.j3_steps);
+                Dispatcher_MoveJoints(targetSteps.j1_steps, targetSteps.j2_steps, targetSteps.j3_steps);
+            } else {
+                printf("[KINEMATICS] Linear target (X:%.1f Y:%.1f Z:%.1f) unreachable!\r\n",
+                       target.x, target.y, target.z);
+            }
             break;
         }
 

@@ -42,8 +42,8 @@
 // 0 deg dla J1 = ramie wzdluz osi +X; 0 deg dla J2 = przedramie wyprostowane wzgledem J1.
 // Poniewaz krancowka jest na poczatku zakresu (0 krokow) i silniki jezdza na '+',
 // ujemny kat bazowy pozwala osiagnac kat 0 deg (wyprostowane ramie) na dodatnich krokach.
-#define J1_HOME_ANGLE_DEG           (0.0f)
-#define J2_HOME_ANGLE_DEG           (0.0f)
+#define J1_HOME_ANGLE_DEG           (-75.0f)
+#define J2_HOME_ANGLE_DEG           (-77.0f)
 #define Z_HOME_POS_MM               0.0f
 
 // ============================================================================

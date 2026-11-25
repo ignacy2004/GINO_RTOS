@@ -300,13 +300,13 @@ void StartKinematicsTask(void *argument)
 {
   /* USER CODE BEGIN StartKinematicsTask */
   RobotState_t state;
-  // Point3D_t cartesian;
+  Point3D_t cartesian;
   /* Infinite loop */
   for(;;)
   {
     SystemState_Get(&state);
-    // Kinematics_StepsToCartesian(state.currentSteps, &cartesian);
-    // SystemState_UpdateCartesian(cartesian.x, cartesian.y, cartesian.z);
+    Kinematics_StepsToCartesian(state.currentSteps, &cartesian);
+    SystemState_UpdateCartesian(cartesian.x, cartesian.y, cartesian.z);
     osDelay(20);
   }
   /* USER CODE END StartKinematicsTask */
