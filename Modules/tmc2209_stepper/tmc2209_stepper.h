@@ -36,6 +36,13 @@ typedef struct {
     int8_t direction;
 } StepperMotor_t;
 
+extern StepperMotor_t motorJ1;
+extern StepperMotor_t motorJ2;
+extern StepperMotor_t motorZ;
+
+extern volatile bool pendingHomeJ1J2;
+extern volatile bool pendingTeachReturnJ1J2;
+
 void Stepper_Init(StepperMotor_t* motor, GPIO_TypeDef* stepPort, uint16_t stepPin, GPIO_TypeDef* dirPort, uint16_t dirPin, GPIO_TypeDef* enPort, uint16_t enPin);
 void Stepper_SetSpeedDivider(StepperMotor_t* motor, uint8_t divider);
 void Limit_Switch_Init(StepperMotor_t* motor, GPIO_TypeDef* Limit_SwitchPort, uint16_t Limit_SwitchPin);
@@ -45,9 +52,13 @@ void Stepper_DisableTeachIn(StepperMotor_t* motor);
 void Stepper_StartTeachInReturn(StepperMotor_t* motor);
 void Stepper_StartHoming(StepperMotor_t* motor);
 void Stepper_Stop(StepperMotor_t* motor);
+void Stepper_PullStepLow(StepperMotor_t* motor);
+void Stepper_OnLimitSwitchTriggered(StepperMotor_t* motor);
+void Stepper_CheckSoftLimits(void);
+void Stepper_HandleHomingSequence(void);
+void Stepper_HandleTeachInSequence(void);
+void Stepper_SyncPositionToSystemState(void);
+void Stepper_CheckMotionCompletedAck(void);
 void Stepper_UpdateStateMachine(StepperMotor_t* motor);
-bool limit_switch_not_pressed(StepperMotor_t* motor);
-void set_axis_homed(StepperMotor_t* motor);
-void move_one_step(StepperMotor_t* motor);
-bool limit_switch_pressed(StepperMotor_t* motor);
+
 #endif

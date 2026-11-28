@@ -27,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include "system_state.h"
 #include "tmc2209_stepper.h"
+#include "stepper_it.h"
 #include "tool_controller.h"
 #include "serial_interface.h"
 #include "dispatcher.h"
@@ -57,95 +58,21 @@ StepperMotor_t motorJ1;
 StepperMotor_t motorJ2;
 StepperMotor_t motorZ;
 
-static volatile bool stepPinHighPhase = false;
-static volatile bool pendingHomeJ1J2 = false;
-static volatile bool pendingTeachReturnJ1J2 = false;
-
-static void StepperTimer_Init(void)
-{
-    __HAL_RCC_TIM2_CLK_ENABLE();
-
-    // APB1 Timer Clock = 84 MHz. Prescaler = 84 - 1 -> Timer tick = 1 MHz (1 us)
-    TIM2->PSC = 84U - 1U;
-    // Timer wywołuje przerwanie 2x na okres kroku najszybszej osi (faza HIGH i faza LOW)
-    TIM2->ARR = (1000000U / (STEPPER_BASE_FREQ_HZ * 2U)) - 1U;
-    TIM2->CNT = 0U;
-    TIM2->EGR = TIM_EGR_UG;
-    TIM2->SR  = 0U;
-    TIM2->DIER = TIM_DIER_UIE;
-
-    HAL_NVIC_SetPriority(TIM2_IRQn, 7, 0);
-    HAL_NVIC_EnableIRQ(TIM2_IRQn);
-
-    TIM2->CR1 |= TIM_CR1_CEN;
-}
-
-void StepperTimer_ISR(void)
-{
-    if (!stepPinHighPhase)
-    {
-        // Faza 1: Aktualizacja maszyny stanów i wystawienie zbocza narastającego (STEP = HIGH)
-        Stepper_UpdateStateMachine(&motorJ1);
-        Stepper_UpdateStateMachine(&motorJ2);
-        Stepper_UpdateStateMachine(&motorZ);
-
-        // Sekwencja bazowania: gdy oś Z skończy bazowanie, uruchom bazowanie osi J1 i J2
-        if (pendingHomeJ1J2 && motorZ.isHomed && motorZ.currentState == STATE_IDLE)
-        {
-            pendingHomeJ1J2 = false;
-            Stepper_StartHoming(&motorJ1);
-            Stepper_StartHoming(&motorJ2);
-        }
-
-        // Sekwencja powrotu Teach-In: gdy oś Z skończy powrót, uruchom powrót osi J1 i J2
-        if (pendingTeachReturnJ1J2 && motorZ.isTeachInDone && motorZ.currentState == STATE_IDLE)
-        {
-            pendingTeachReturnJ1J2 = false;
-            Stepper_StartTeachInReturn(&motorJ1);
-            Stepper_StartTeachInReturn(&motorJ2);
-        }
-
-        if (motorJ1.currentPosition > J1_MAX_STEPS && motorJ1.direction > 0)
-        {
-            Stepper_Stop(&motorJ1);
-        }
-        if (motorJ2.currentPosition > J2_MAX_STEPS && motorJ2.direction > 0)
-        {
-            Stepper_Stop(&motorJ2);
-        }
-        if (motorZ.currentPosition > Z_MAX_STEPS && motorZ.direction > 0)
-        {
-            Stepper_Stop(&motorZ);
-        }
-
-        stepPinHighPhase = true;
-    }
-    else
-    {
-        // Faza 2: Zbocze opadające (STEP = LOW) na wszystkich osiach po połowie okresu timera
-        HAL_GPIO_WritePin(motorJ1.StepPort, motorJ1.StepPin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(motorJ2.StepPort, motorJ2.StepPin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(motorZ.StepPort,  motorZ.StepPin,  GPIO_PIN_RESET);
-
-        stepPinHighPhase = false;
-    }
-}
+volatile bool pendingHomeJ1J2 = false;
+volatile bool pendingTeachReturnJ1J2 = false;
 
 void Dispatcher_MoveJoints(int32_t j1_steps, int32_t j2_steps, int32_t j3_steps)
 {
-    __disable_irq();
     pendingHomeJ1J2 = false;
     pendingTeachReturnJ1J2 = false;
     Stepper_MoveTo(&motorJ1, j1_steps);
     Stepper_MoveTo(&motorJ2, j2_steps);
     Stepper_MoveTo(&motorZ, j3_steps);
-    __enable_irq();
 }
 
 void Dispatcher_HomeAllAxes(void)
 {
     // Etap 1: Zatrzymaj J1 i J2, wyzeruj ich flagę isHomed i zbazuj najpierw oś Z!
-    __disable_irq();
     pendingTeachReturnJ1J2 = false;
     Stepper_Stop(&motorJ1);
     Stepper_Stop(&motorJ2);
@@ -154,7 +81,6 @@ void Dispatcher_HomeAllAxes(void)
 
     pendingHomeJ1J2 = true;
     Stepper_StartHoming(&motorZ);
-    __enable_irq();
 }
 
 void Dispatcher_SetTeachMode(uint8_t axisId, bool releaseDrive)
@@ -373,43 +299,11 @@ void StartMotorTask(void *argument)
   {
     if (!SystemState_IsEstop())
     {
-      SystemState_UpdateSteps(motorJ1.currentPosition, motorJ2.currentPosition, motorZ.currentPosition);
-
-      if (!SystemState_IsHomed() &&
-          motorJ1.isHomed && motorJ2.isHomed && motorZ.isHomed &&
-          motorJ1.currentState == STATE_IDLE &&
-          motorJ2.currentState == STATE_IDLE &&
-          motorZ.currentState == STATE_IDLE)
-      {
-        SystemState_SetHomed(true);
-        printf("[HOMING] All axes homed! Position set to (0, 0, 0)\r\n");
-      }
-
-      if (motorJ1.isTeachInDone && motorJ2.isTeachInDone && motorZ.isTeachInDone &&
-          motorJ1.currentState == STATE_IDLE &&
-          motorJ2.currentState == STATE_IDLE &&
-          motorZ.currentState == STATE_IDLE)
-      {
-        SystemState_SetTeachInSteps(motorJ1.teachInStepsCount,
-                                    motorJ2.teachInStepsCount,
-                                    motorZ.teachInStepsCount);
-
-        motorJ1.teachInStepsCount = 0;
-        motorJ2.teachInStepsCount = 0;
-        motorZ.teachInStepsCount = 0;
-
-        motorJ1.isTeachInDone = false;
-        motorJ2.isTeachInDone = false;
-        motorZ.isTeachInDone = false;
-      }
-
-      if (!pendingHomeJ1J2 && !pendingTeachReturnJ1J2 &&
-          motorJ1.currentState == STATE_IDLE &&
-          motorJ2.currentState == STATE_IDLE &&
-          motorZ.currentState == STATE_IDLE)
-      {
-        SystemState_MarkMotionAckCompleted();
-      }
+      Stepper_CheckSoftLimits();
+      Stepper_HandleHomingSequence();
+      Stepper_HandleTeachInSequence();
+      Stepper_SyncPositionToSystemState();
+      Stepper_CheckMotionCompletedAck();
     }
     else
     {
@@ -418,7 +312,7 @@ void StartMotorTask(void *argument)
       Stepper_Stop(&motorZ);
     }
 
-    osDelay(5);
+    osDelay(2);
   }
   /* USER CODE END StartMotorTask */
 }

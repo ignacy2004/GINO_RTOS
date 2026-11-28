@@ -197,4 +197,19 @@ void TIM2_IRQHandler(void)
     StepperTimer_ISR();
   }
 }
+
+void EXTI3_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(J1_LIMIT_Pin);
+}
+
+void EXTI9_5_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(J2_LIMIT_Pin);
+}
+
+void EXTI15_10_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(Z_LIMIT_Pin);
+}
 /* USER CODE END 1 */
